@@ -2,32 +2,55 @@
 
     <div>
 
-        <form class="form-inline" v-on:submit.prevent="parsePage">
+        <form class="form" v-on:submit.prevent="submitForm" >
+
+            
+            <!-- <div class="form-group">                 -->
+                <input type="checkbox" v-model="useUrl"> Benyt direkte link fra Boliga
+            <!-- </div> -->
+                        
+            <div v-if="useUrl">
+                <div class="form-group">
+                    <label for="page">
+                        Link
+                    </label>
+                    <input type="text" class="form-control" v-model="pageUrl" placeholder="link" style="width:250px">
+                    
+                    <button type="button" class="btn btn-link" @click="loadBorups">Borups</button>
+                    <button type="button" class="btn btn-link" @click="loadFjenne">Fjenne</button>
+                </div>
+            </div>
+
+            <div v-else>
+                <div class="form-group">
+                    <label for="page">Vejnavn</label>
+                    <input type="text" class="form-control" v-model="street" placeholder="vejnavn" style="width:250px">
+                </div>
+
+                <div class="form-group">
+                    <label for="page">Postnummer</label>
+                    <input type="text" class="form-control" v-model="zip" placeholder="postnummer" style="width:100px">
+                </div>
+            </div>
             
             <div class="form-group">
-                <label for="page">Url</label>
-                <input type="text" class="form-control" v-model="pageUrl" placeholder="url">
+                <label for="page">Min. m2 pris</label>
+                <input type="text" class="form-control" v-model="minKrm2" placeholder="m2 pris" style="width:100px">
             </div>
 
             <div class="form-group">
-                <label for="page">Min. m2 pris</label>
-                <input type="text" class="form-control" v-model="minKrm2" placeholder="m2 pris">
+                <label for="page">Antal dage tilbage</label>
+                <input type="text" class="form-control" v-model="daysBack" placeholder="dage" style="width:100px">
             </div>
 
-            <!-- <div class="form-group">
-                <label for="page">From</label>
-                <input type="text" class="form-control" v-model="dateFrom" placeholder="date">
-            </div> -->
-
-            <button type="submit" class="btn btn-default">Søg</button>
-
-            <button type="button" class="btn btn-link" @click="loadBorups">Borups</button>
-            <button type="button" class="btn btn-link" @click="loadFjenne">Fjenne</button>
+            <div class="form-group">
+                <button type="submit" class="btn btn-default">Søg</button>
+            </div>            
+            
         </form>
 
         <br>
 
-        
         <table class="table" v-if="floorRegression && aboveRegression && allRegression">
             <thead>
                 <tr>
@@ -117,6 +140,10 @@
         },
         data() {
             return {
+                daysBack: 365*2,
+                useUrl: true,
+                street: '',
+                zip: '',
                 chart: null,
                 showTable: true,
                 useSaleInRegression: false,
@@ -163,7 +190,9 @@
         methods: {
 
             loadFjenne() {
-                this.pageUrl = 'http://www.boliga.dk/salg/resultater?so=1&sort=omregnings_dato-d&maxsaledate=today&iPostnr=2700&gade=Fjenneslevvej&type=&minsaledate=2016'
+                // this.pageUrl = 'http://www.boliga.dk/salg/resultater?so=1&sort=omregnings_dato-d&maxsaledate=today&iPostnr=2700&gade=Fjenneslevvej&type=&minsaledate=2016'
+
+                this.pageUrl = 'http://www.boliga.dk/solgt/ejerlejlighed-Fjenneslevvej-2700'
             },
 
             loadBorups() {
@@ -180,18 +209,41 @@
                 this.makeChart()
             },
 
-            parsePage() {
-
-                
+            submitForm() {
 
                 let form = {
-                    pageUrl: this.pageUrl,
-                    minKrm2: this.minKrm2                    
+                    minKrm2: this.minKrm2,
+                    daysBack: this.daysBack
                 }
 
-                if (this.dateFrom) {
-                    form.dateFrom = this.dateFrom
+                if (this.useUrl) {
+                    form.pageUrl = this.pageUrl
+                } else {
+                    form.pageUrl = 'http://www.boliga.dk/solgt/ejerlejlighed-' + escape(this.street) + '-' + this.zip
                 }
+
+                
+                axios.post('parse', form).then(response => {
+
+                    this.showTable = false
+
+                    this.pageData = response.data
+
+                    if (this.pageData.length > 0) {
+
+                        this.pageData = _.sortBy(this.pageData, d => d.date)
+
+                        this.makeSeries()
+
+                        this.showTable = true                    
+                    }
+                    
+                })                
+            },
+
+            loadData(form) {
+
+
 
                 axios.post('parsesold', form).then(response => {
                 
@@ -199,22 +251,47 @@
 
                     this.pageData = response.data
 
-                    let formSale = {
-                        pageUrl: this.pageUrl.replace('solgt/', '')
+                    if (this.pageData.length > 0) {
+
+                        let formSale = {
+                            pageUrl: form.pageUrl.replace('solgt/', '')
+                        }
+
+                        axios.post('parsesale', formSale).then(response2 => {
+                            let data = response2.data
+
+                            _.each(data, d => this.pageData.push(d))
+
+                            this.pageData = _.sortBy(this.pageData, x => x.sale)
+
+                            this.makeSeries()
+
+                            this.showTable = true
+                        })    
                     }
-
-                    axios.post('parsesale', formSale).then(response2 => {
-                        let data = response2.data
-
-                        _.each(data, d => this.pageData.push(d))
-
-                        this.makeSeries()
-
-                        this.showTable = true
-                    })
-
                     
-                })                
+                })
+            },
+
+            loadFromStreet() {
+
+                let form = {
+                    pageUrl: 'http://www.boliga.dk/solgt/ejerlejlighed-' + escape(this.street) + '-' + this.zip,
+                    minKrm2: this.minKrm2
+                }
+
+                this.loadData(form)
+
+            },
+
+            loadFromUrl() {
+
+                let form = {
+                    pageUrl: this.pageUrl,
+                    minKrm2: this.minKrm2                    
+                }
+
+                this.loadData(form)
 
                 
             },
@@ -235,12 +312,12 @@
                 this.allRegression = this.makeRegression(allData)
                 const allXY = [
                     {
-                        x: allData[allData.length-1].date, 
-                        y: (this.allRegression.m * (allData[allData.length - 1].date - minAllData) + this.allRegression.b)
+                        x: allData[0].date, 
+                        y: (this.allRegression.m * (allData[0].date - minAllData) + this.allRegression.b)
                     },
                     {
-                        x: allData[0].date, 
-                        y: (this.allRegression.m * (allData[0].date - minAllData) + this.allRegression.b)                        
+                        x: allData[allData.length-1].date, 
+                        y: (this.allRegression.m * (allData[allData.length - 1].date - minAllData) + this.allRegression.b)
                     }
                 ]
 
@@ -249,12 +326,12 @@
                 this.floorRegression = this.makeRegression(floorData)
                 const floorXY = [                
                     {
-                        x: parseInt(floorData[floorData.length-1].date), 
-                        y: (this.floorRegression.m * (floorData[floorData.length - 1].date - minFloorData) + this.floorRegression.b)
-                    },
-                    {
                         x: parseInt(floorData[0].date), 
                         y: (this.floorRegression.m * (floorData[0].date - minFloorData) + this.floorRegression.b)
+                    },
+                    {
+                        x: parseInt(floorData[floorData.length-1].date), 
+                        y: (this.floorRegression.m * (floorData[floorData.length - 1].date - minFloorData) + this.floorRegression.b)
                     }
                 ]
 
@@ -263,12 +340,12 @@
                 this.aboveRegression = this.makeRegression(aboveData)
                 const aboveXY = [
                     {
-                        x: aboveData[aboveData.length-1].date, 
-                        y: (this.aboveRegression.m * (aboveData[aboveData.length - 1].date - minAboveData) + this.aboveRegression.b)
+                        x: aboveData[0].date, 
+                        y: (this.aboveRegression.m * (aboveData[0].date - minAboveData) + this.aboveRegression.b)
                     },
                     {
-                        x: aboveData[0].date, 
-                        y: (this.aboveRegression.m * (aboveData[0].date - minAboveData) + this.aboveRegression.b)                        
+                        x: aboveData[aboveData.length-1].date, 
+                        y: (this.aboveRegression.m * (aboveData[aboveData.length - 1].date - minAboveData) + this.aboveRegression.b)
                     }
                 ]
 

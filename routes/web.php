@@ -21,6 +21,8 @@ Auth::routes();
 
 Route::get('/home', 'HomeController@index')->name('home');
 
+Route::post('parse', 'ParseController@parse');
+
 Route::post('/parsesold', function (Request $request) {
 
 	$page = $request->pageUrl;
