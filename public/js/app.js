@@ -58616,6 +58616,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
+//
+//
+//
 
 
 
@@ -58630,6 +58633,7 @@ var Highcharts = __webpack_require__(178);
     },
     data: function data() {
         return {
+            selectM2: 1,
             floorRegression: null,
             aboveRegression: null,
             allRegression: null,
@@ -58661,10 +58665,10 @@ var Highcharts = __webpack_require__(178);
 
     filters: {
         avgDaily: function avgDaily(val) {
-            return (val * 1000 * 60 * 60 * 24).toFixed(1);
+            return (val * 1000 * 60 * 60 * 24).toFixed(0);
         },
         avgMonthly: function avgMonthly(val) {
-            return (val * 1000 * 60 * 60 * 24 * 30).toFixed(1);
+            return (val * 1000 * 60 * 60 * 24 * 30).toFixed(0);
         }
     },
     methods: {
@@ -71062,7 +71066,27 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
     }
   }, [_vm._v("Fjenne")])]), _vm._v(" "), _c('br'), _vm._v(" "), (_vm.floorRegression && _vm.aboveRegression && _vm.allRegression) ? _c('table', {
     staticClass: "table"
-  }, [_vm._m(0), _vm._v(" "), _c('tbody', [_c('tr', [_c('td', [_vm._v("Daglig ændring (kr)")]), _vm._v(" "), _c('td', [_vm._v(_vm._s(_vm._f("avgDaily")(_vm.allRegression.m)))]), _vm._v(" "), _c('td', [_vm._v(_vm._s(_vm._f("avgDaily")(_vm.floorRegression.m)))]), _vm._v(" "), _c('td', [_vm._v(_vm._s(_vm._f("avgDaily")(_vm.aboveRegression.m)))])]), _vm._v(" "), _c('tr', [_c('td', [_vm._v("Månedlig ændring (kr)")]), _vm._v(" "), _c('td', [_vm._v(_vm._s(_vm._f("avgMonthly")(_vm.allRegression.m)))]), _vm._v(" "), _c('td', [_vm._v(_vm._s(_vm._f("avgMonthly")(_vm.floorRegression.m)))]), _vm._v(" "), _c('td', [_vm._v(_vm._s(_vm._f("avgMonthly")(_vm.aboveRegression.m)))])])])]) : _vm._e(), _vm._v(" "), _c('div', {
+  }, [_c('thead', [_c('tr', [_c('th', [_vm._v("M2 "), _c('input', {
+    directives: [{
+      name: "model",
+      rawName: "v-model",
+      value: (_vm.selectM2),
+      expression: "selectM2"
+    }],
+    attrs: {
+      "type": "text",
+      "placeholder": "m2"
+    },
+    domProps: {
+      "value": (_vm.selectM2)
+    },
+    on: {
+      "input": function($event) {
+        if ($event.target.composing) { return; }
+        _vm.selectM2 = $event.target.value
+      }
+    }
+  })]), _vm._v(" "), _c('th', [_vm._v("Alle")]), _vm._v(" "), _c('th', [_vm._v("Etage 0")]), _vm._v(" "), _c('th', [_vm._v("Etage 1+")])])]), _vm._v(" "), _c('tbody', [_c('tr', [_c('td', [_vm._v("Daglig ændring (kr)")]), _vm._v(" "), _c('td', [_vm._v(_vm._s(_vm._f("avgDaily")((_vm.allRegression.m * _vm.selectM2))))]), _vm._v(" "), _c('td', [_vm._v(_vm._s(_vm._f("avgDaily")((_vm.floorRegression.m * _vm.selectM2))))]), _vm._v(" "), _c('td', [_vm._v(_vm._s(_vm._f("avgDaily")((_vm.aboveRegression.m * _vm.selectM2))))])]), _vm._v(" "), _c('tr', [_c('td', [_vm._v("Månedlig ændring (kr)")]), _vm._v(" "), _c('td', [_c('strong', [_vm._v(_vm._s(_vm._f("avgMonthly")((_vm.allRegression.m * _vm.selectM2))))])]), _vm._v(" "), _c('td', [_vm._v(_vm._s(_vm._f("avgMonthly")((_vm.floorRegression.m * _vm.selectM2))))]), _vm._v(" "), _c('td', [_vm._v(_vm._s(_vm._f("avgMonthly")((_vm.aboveRegression.m * _vm.selectM2))))])])])]) : _vm._e(), _vm._v(" "), _c('div', {
     staticStyle: {
       "height": "500px"
     },
@@ -71143,9 +71167,7 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
       "data-type": "numeric"
     }
   })], 1)], 1)
-},staticRenderFns: [function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
-  return _c('thead', [_c('tr', [_c('th', [_vm._v("Periode")]), _vm._v(" "), _c('th', [_vm._v("Alle")]), _vm._v(" "), _c('th', [_vm._v("Etage 0")]), _vm._v(" "), _c('th', [_vm._v("Etage 1+")])])])
-}]}
+},staticRenderFns: []}
 module.exports.render._withStripped = true
 if (false) {
   module.hot.accept()

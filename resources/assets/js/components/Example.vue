@@ -27,10 +27,11 @@
 
         <br>
 
+        
         <table class="table" v-if="floorRegression && aboveRegression && allRegression">
             <thead>
                 <tr>
-                    <th>Periode</th>
+                    <th>M2 <input type="text" v-model="selectM2" placeholder="m2"></th>
                     <th>Alle</th>
                     <th>Etage 0</th>
                     <th>Etage 1+</th>
@@ -39,15 +40,17 @@
             <tbody>
                 <tr>
                     <td>Daglig ændring (kr)</td>
-                    <td>{{ allRegression.m | avgDaily }}</td>
-                    <td>{{ floorRegression.m | avgDaily }}</td>
-                    <td>{{ aboveRegression.m | avgDaily }}</td>
+                    <td>{{ (allRegression.m * selectM2) | avgDaily }}</td>
+                    <td>{{ (floorRegression.m * selectM2) | avgDaily }}</td>
+                    <td>{{ (aboveRegression.m * selectM2) | avgDaily }}</td>                    
                 </tr>
                 <tr>
                     <td>Månedlig ændring (kr)</td>
-                    <td>{{ allRegression.m | avgMonthly }}</td>
-                    <td>{{ floorRegression.m | avgMonthly }}</td>
-                    <td>{{ aboveRegression.m | avgMonthly }}</td>
+                    <td>
+                        <strong>{{ (allRegression.m * selectM2) | avgMonthly }}</strong>
+                    </td>
+                    <td>{{ (floorRegression.m * selectM2) | avgMonthly }}</td>
+                    <td>{{ (aboveRegression.m * selectM2) | avgMonthly }}</td>                    
                 </tr>
             </tbody>
         </table>
@@ -98,6 +101,7 @@
         },
         data() {
             return {
+                selectM2: 1,
                 floorRegression: null,
                 aboveRegression: null,
                 allRegression: null,
@@ -128,10 +132,10 @@
         },
         filters: {
             avgDaily(val) {
-                return (val * 1000 * 60 * 60 * 24).toFixed(1)
+                return (val * 1000 * 60 * 60 * 24).toFixed(0)
             },
             avgMonthly(val) {
-                return (val * 1000 * 60 * 60 * 24 * 30).toFixed(1)
+                return (val * 1000 * 60 * 60 * 24 * 30).toFixed(0)
             }
         },
         methods: {
