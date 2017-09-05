@@ -5,13 +5,13 @@
         <form class="form-inline" v-on:submit.prevent="parsePage">
             
             <div class="form-group">
-                <label for="page">Page Url</label>
+                <label for="page">Url</label>
                 <input type="text" class="form-control" v-model="pageUrl" placeholder="url">
             </div>
 
             <div class="form-group">
-                <label for="page">Min m2 pris</label>
-                <input type="text" class="form-control" v-model="minKrm2" placeholder="url">
+                <label for="page">Min. m2 pris</label>
+                <input type="text" class="form-control" v-model="minKrm2" placeholder="m2 pris">
             </div>
 
             <!-- <div class="form-group">
@@ -19,29 +19,44 @@
                 <input type="text" class="form-control" v-model="dateFrom" placeholder="date">
             </div> -->
 
-            <button type="submit" class="btn btn-default">Search</button>
+            <button type="submit" class="btn btn-default">Søg</button>
 
-            <button type="button" class="btn btn-link" @click="loadBorups">borups</button>
-            <button type="button" class="btn btn-link" @click="loadFjenne">fjenne</button>
+            <button type="button" class="btn btn-link" @click="loadBorups">Borups</button>
+            <button type="button" class="btn btn-link" @click="loadFjenne">Fjenne</button>
         </form>
 
         <br>
 
-        <p v-if="floorRegression" class="well">
-            Floor avg. daily {{ floorRegression.m | avgDaily }}, monthly {{ floorRegression.m | avgMonthly }}
-        </p>
-        <p v-if="aboveRegression" class="well">
-            Above avg. daily {{ aboveRegression.m | avgDaily }}, monthly {{ aboveRegression.m | avgMonthly }}
-        </p>
-        <p v-if="aboveRegression" class="well">
-            All avg. daily {{ allRegression.m | avgDaily }}, monthly {{ allRegression.m | avgMonthly }}
-        </p>
+        <table class="table" v-if="floorRegression && aboveRegression && allRegression">
+            <thead>
+                <tr>
+                    <th>Periode</th>
+                    <th>Alle</th>
+                    <th>Etage 0</th>
+                    <th>Etage 1+</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Daglig ændring (kr)</td>
+                    <td>{{ allRegression.m | avgDaily }}</td>
+                    <td>{{ floorRegression.m | avgDaily }}</td>
+                    <td>{{ aboveRegression.m | avgDaily }}</td>
+                </tr>
+                <tr>
+                    <td>Månedlig ændring (kr)</td>
+                    <td>{{ allRegression.m | avgMonthly }}</td>
+                    <td>{{ floorRegression.m | avgMonthly }}</td>
+                    <td>{{ aboveRegression.m | avgMonthly }}</td>
+                </tr>
+            </tbody>
+        </table>
 
-        <div id="chart" style="height:600px"></div>
+        <div id="chart" style="height:500px"></div>
 
         <br>
 
-        <table-component
+        <table-component 
             table-class="table"
             :data="pageData"
             sort-by="date"
@@ -54,13 +69,13 @@
                  </template>
              </table-column>
 
-            <table-column show="address" label="Address"></table-column>
-            <table-column show="dateStr" label="Date" data-type="date:DD-MM-YYYY"></table-column>
-            <table-column show="price" label="Price" data-type="numeric"></table-column>
+            <table-column show="address" label="Adresse"></table-column>
+            <table-column show="dateStr" label="Dato" data-type="date:DD-MM-YYYY"></table-column>
+            <table-column show="price" label="Pris" data-type="numeric"></table-column>
             <table-column show="krm2" label="Kr/m2" data-type="numeric"></table-column>
-            <table-column show="rooms" label="Rooms" data-type="numeric"></table-column>
+            <table-column show="rooms" label="Værelser" data-type="numeric"></table-column>
             <table-column show="m2" label="m2" data-type="numeric"></table-column>
-            <table-column show="floor" label="Floor" data-type="numeric"></table-column>
+            <table-column show="floor" label="Etage" data-type="numeric"></table-column>
                           
         </table-component>
     
@@ -88,35 +103,35 @@
                 allRegression: null,
                 series: [{
                     type: 'scatter',
-                    name: 'All',                    
+                    name: 'Alle',                    
                 }, {
                     type: 'scatter',
-                    name: '1.+',                    
+                    name: 'Etage 1+',                    
                 }, {
                     type: 'scatter',
-                    name: 'Floor',                    
+                    name: 'Etage 0',                    
                 }, {
                     type: 'line',
-                    name: 'all regr'
+                    name: 'Alle etager regr.'
                 }, {
                     type: 'line',
-                    name: '1.+ regr'
+                    name: 'Etage 1+ regr.'
                 }, {
                     type: 'line',
-                    name: 'floor regr'
+                    name: 'Etage 0 regr.'
                 }],
                 pageData: [],
-                minKrm2: 0,
+                minKrm2: 15000,
                 dateFrom: '',
                 pageUrl: 'http://www.boliga.dk/solgt/ejerlejlighed-Borups%20All%C3%A9-2400'
             }
         },
         filters: {
             avgDaily(val) {
-                return (val * 1000 * 60 * 60 * 24).toFixed(2)
+                return (val * 1000 * 60 * 60 * 24).toFixed(1)
             },
             avgMonthly(val) {
-                return (val * 1000 * 60 * 60 * 24 * 30).toFixed(2)
+                return (val * 1000 * 60 * 60 * 24 * 30).toFixed(1)
             }
         },
         methods: {
@@ -265,7 +280,7 @@
                         zoomType: 'xy'                  
                     },
                     title: {
-                        text: 'chart'
+                        text: 'm2/pris udvikling'
                     },
                     xAxis: {
                         type: 'datetime',
@@ -279,7 +294,7 @@
                     },
                     yAxis: {
                         title: {
-                            text: 'krm2'
+                            text: 'kr/m2'
                         }                        
                     },
                     plotOptions: {
@@ -292,7 +307,7 @@
                     },
                     tooltip: {
                         useHTML: true,
-                        pointFormat: '<ul> <li>Price: {point.price}<li> <li>Krm2: {point.y}<li> <li>Address: {point.address}<li> <li>Floor: {point.floor}<li> <li>M2: {point.m2}<li> <li>Date: {point.dateStr}<li> </ul>'
+                        pointFormat: '<ul> <li>Pris: {point.price}<li> <li>Kr/m2: {point.y}<li> <li>Adresse: {point.address}<li> <li>Etage: {point.floor}<li> <li>M2: {point.m2}<li> <li>Dato: {point.dateStr}<li> </ul>'
                     },
                     series: this.series,
                     credits: {
