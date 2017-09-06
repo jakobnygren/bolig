@@ -125,6 +125,10 @@ class ParseController extends Controller {
 
 			$d = \Carbon\Carbon::now()->subDays($days);
 			$dateStr = $d->toDateString();
+
+			$tmp = explode('-', $dateStr);
+			$dateStr = $tmp[2] . '-' . $tmp[1] . '-' . $tmp[0];
+
 			$date = $d->timestamp * 1000;
 
 			$data->push([

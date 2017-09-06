@@ -2,6 +2,8 @@
 
     <div>
 
+        <!-- <i class="fa fa-spinner"></i> -->
+
         <form class="form" v-on:submit.prevent="submitForm" >
 
             
@@ -44,7 +46,15 @@
             </div>
 
             <div class="form-group">
-                <button type="submit" class="btn btn-default">Søg</button>
+                <button 
+                    style="width:100px"
+                    id="submitButton" 
+                    type="submit" 
+                    class="btn btn-primary" 
+                    data-loading-text="<i class='fa fa-spinner fa-spin '></i> Processing ..."
+                >
+                    Hent
+                </button>
             </div>            
             
         </form>
@@ -222,6 +232,9 @@
                     form.pageUrl = 'http://www.boliga.dk/solgt/ejerlejlighed-' + escape(this.street) + '-' + this.zip
                 }
 
+
+                $('#submitButton').button('loading')
+
                 
                 axios.post('parse', form).then(response => {
 
@@ -235,129 +248,65 @@
 
                         this.makeSeries()
 
-                        this.showTable = true                    
+                        this.showTable = true
+
+                        $('#submitButton').button('reset')
                     }
                     
                 })                
             },
-
-            loadData(form) {
-
-
-
-                axios.post('parsesold', form).then(response => {
-                
-                    this.showTable = false
-
-                    this.pageData = response.data
-
-                    if (this.pageData.length > 0) {
-
-                        let formSale = {
-                            pageUrl: form.pageUrl.replace('solgt/', '')
-                        }
-
-                        axios.post('parsesale', formSale).then(response2 => {
-                            let data = response2.data
-
-                            _.each(data, d => this.pageData.push(d))
-
-                            this.pageData = _.sortBy(this.pageData, x => x.sale)
-
-                            this.makeSeries()
-
-                            this.showTable = true
-                        })    
-                    }
-                    
-                })
-            },
-
-            loadFromStreet() {
-
-                let form = {
-                    pageUrl: 'http://www.boliga.dk/solgt/ejerlejlighed-' + escape(this.street) + '-' + this.zip,
-                    minKrm2: this.minKrm2
-                }
-
-                this.loadData(form)
-
-            },
-
-            loadFromUrl() {
-
-                let form = {
-                    pageUrl: this.pageUrl,
-                    minKrm2: this.minKrm2                    
-                }
-
-                this.loadData(form)
-
-                
-            },
+            
             makeRegression(data) {
 
-                let minDate = _.min(data, x => x.date).date
+                // let minDate = _.min(data, x => x.date).date
 
-                let regrdata = data.map(d => [d.date - minDate, parseInt(d.krm2)])
-
+                let regrdata = data.map(d => [parseInt(d.date), parseInt(d.krm2)])
                 const params = ss.linearRegression(regrdata)
-                
+
                 return params
             },
+
+            makeRegressionSeries(tsFrom, tsTo, regressionParams) {
+
+                let m = (tsTo - tsFrom) / 2 + tsFrom
+
+                return [
+                    {
+                        x: tsFrom,
+                        y: parseInt(regressionParams.m * tsFrom + regressionParams.b)                        
+                    },
+                    {
+                        x: m,
+                        y: parseInt(regressionParams.m * m + regressionParams.b)                        
+                    },
+                    {
+                        x: tsTo,
+                        y: parseInt(regressionParams.m * tsTo + regressionParams.b)                        
+                    }
+                ]
+            },
+
             makeSeries() {
 
                 let allData = this.pageData.filter(x => x.selected && x.sold == 'Ja')
-                let minAllData = _.min(allData, x => x.date).date
-                this.allRegression = this.makeRegression(allData)
-                const allXY = [
-                    {
-                        x: allData[0].date, 
-                        y: (this.allRegression.m * (allData[0].date - minAllData) + this.allRegression.b)
-                    },
-                    {
-                        x: allData[allData.length-1].date, 
-                        y: (this.allRegression.m * (allData[allData.length - 1].date - minAllData) + this.allRegression.b)
-                    }
-                ]
-
                 let floorData = this.pageData.filter(x => x.floor == 0 && x.selected && x.sold == 'Ja')
-                let minFloorData = _.min(floorData, x => x.date).date
-                this.floorRegression = this.makeRegression(floorData)
-                const floorXY = [                
-                    {
-                        x: parseInt(floorData[0].date), 
-                        y: (this.floorRegression.m * (floorData[0].date - minFloorData) + this.floorRegression.b)
-                    },
-                    {
-                        x: parseInt(floorData[floorData.length-1].date), 
-                        y: (this.floorRegression.m * (floorData[floorData.length - 1].date - minFloorData) + this.floorRegression.b)
-                    }
-                ]
-
                 let aboveData = this.pageData.filter(x => x.floor > 0 && x.selected && x.sold == 'Ja')
-                let minAboveData = _.min(aboveData, x => x.date).date
+                let saleData = this.pageData.filter(x => x.selected && x.sold == 'Nej')
+
+                let tsFrom = parseInt(_.min(allData, x => x.date).date)
+                let tsTo = parseInt(Date.now())
+                
+                this.allRegression = this.makeRegression(allData)
+                this.floorRegression = this.makeRegression(floorData)
                 this.aboveRegression = this.makeRegression(aboveData)
-                const aboveXY = [
-                    {
-                        x: aboveData[0].date, 
-                        y: (this.aboveRegression.m * (aboveData[0].date - minAboveData) + this.aboveRegression.b)
-                    },
-                    {
-                        x: aboveData[aboveData.length-1].date, 
-                        y: (this.aboveRegression.m * (aboveData[aboveData.length - 1].date - minAboveData) + this.aboveRegression.b)
-                    }
-                ]
 
-                // console.log(this.floorRegression, this.aboveRegression)
-
-                this.chart.series[0].update({ data: this.makeData(allData, null, 'Ja') })
-                this.chart.series[1].update({ data: this.makeData(aboveData, -1, 'Ja') })
-                this.chart.series[2].update({ data: this.makeData(floorData, 0, 'Ja') })
-                this.chart.series[3].update({ data: allXY })
-                this.chart.series[4].update({ data: aboveXY })
-                this.chart.series[5].update({ data: floorXY })
-                this.chart.series[6].update({ data: this.makeData(this.pageData.filter(x => x.sold == 'Nej' && x.selected), null, 'Nej') })
+                this.chart.series[0].update({ data: this.makeData(allData) })
+                this.chart.series[1].update({ data: this.makeData(aboveData) })
+                this.chart.series[2].update({ data: this.makeData(floorData) })
+                this.chart.series[3].update({ data: this.makeRegressionSeries(tsFrom, tsTo, this.allRegression) })
+                this.chart.series[4].update({ data: this.makeRegressionSeries(tsFrom, tsTo, this.aboveRegression) })
+                this.chart.series[5].update({ data: this.makeRegressionSeries(tsFrom, tsTo, this.floorRegression) })
+                this.chart.series[6].update({ data: this.makeData(saleData) })
                 this.chart.series[6].update({ 
                     events: {
                         click: function (event) {
@@ -365,25 +314,12 @@
                             win.focus();
                         }
                     }
-                 })
+                 })                
             },
+
             makeData(data, floor, sold) {
 
-                let newdata = []
-
-                if (floor == null) {
-                    newdata = this.pageData.filter(x => x.selected && x.sold == sold)                    
-                }
-
-                else if (floor >= 0) {
-                    newdata = this.pageData.filter(x => x.floor == floor && x.selected && x.sold == sold)
-                }
-
-                else if (floor < 0) {
-                    newdata = this.pageData.filter(x => x.floor > 0 && x.selected && x.sold == sold)
-                }
-
-                return newdata.map(d => {
+                return data.map(d => {
                     return {
                         // x: moment(d.date, 'DD-MM-YYYY').unix(),
                         x: parseInt(d.date),
@@ -399,11 +335,13 @@
                 })
 
             },
+            
             makeChart () {
                 this.chart = new Highcharts.Chart({
                     chart: {
                         renderTo: 'chart', 
-                        zoomType: 'xy'                  
+                        zoomType: 'xy',
+                        type: 'line'                 
                     },
                     title: {
                         text: 'm2/pris udvikling'
@@ -413,10 +351,11 @@
                     },
                     xAxis: {
                         type: 'datetime',
-                        dateTimeLabelFormats: { // don't display the dummy year
-                            month: '%e. %b',
-                            year: '%b'
-                        },
+                        tickInterval: 7 * 24 * 3600 * 1000,
+                        // dateTimeLabelFormats: { // don't display the dummy year
+                        //     month: '%e. %b',
+                        //     year: '%b'
+                        // },
                     },
                     legend: {
                         enabled: true
