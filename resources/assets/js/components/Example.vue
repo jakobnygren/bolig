@@ -47,7 +47,7 @@
 
             <div class="form-group">
                 <button 
-                    style="width:100px"
+                    style="width:200px"
                     id="submitButton" 
                     type="submit" 
                     class="btn btn-primary" 
